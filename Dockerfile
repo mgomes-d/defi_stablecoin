@@ -8,6 +8,8 @@ RUN apt-get update && \
     curl -L "https://foundry.paradigm.xyz" | bash && \
     foundry up
 
+COPY ~/.gitconfig /
+
 WORKDIR /app
 
 CMD ["tail", "-f", "/dev/null"]
