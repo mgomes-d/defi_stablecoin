@@ -1,0 +1,18 @@
+version: "3"
+
+services:
+  defi-stablecoin:
+    container_name: defi-stablecoin
+    image: defi-stablecoin
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/app
+    networks:
+      - defi-stablecoin_network
+    restart: always
+
+networks:
+  defi-stablecoin_network:
+    name: defi-stablecoin_network
