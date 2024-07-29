@@ -2,6 +2,10 @@
 cache/
 out/
 
+# Lib
+lib/
+.gitmodules
+
 # Ignores development broadcast logs
 !/broadcast
 /broadcast/*/31337/
