@@ -5,6 +5,7 @@ out/
 # Lib
 lib/
 .gitmodules
+.github
 
 # Ignores development broadcast logs
 !/broadcast
