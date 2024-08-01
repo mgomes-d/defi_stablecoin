@@ -203,7 +203,7 @@ contract DSCEngine is ReentrancyGuard {
     function burnDsc(uint256 amount) public moreThanZero(amount) 
     {
         _burnDsc(amount, msg.sender, msg.sender);
-        _revertIfHealthFactorIsBroken(msg.sender); // I don't this would ever hit...
+        _revertIfHealthFactorIsBroken(msg.sender);
     }
 
     // If we do start nearing undercollateralization, we need to someone to liquidate positions
@@ -319,6 +319,11 @@ contract DSCEngine is ReentrancyGuard {
         // total DSC minted
         // total collateral VALUE
         (uint256 totalDscMinted, uint256 collateralValueInUsd) = _getAccountInformation(user);
+
+        if (totalDscMinted == 0) {
+        return type(uint256).max; // Return the maximum uint256 value perfect health cause no debt
+        }
+
         uint256 collateralAdjustedForThreshold = (collateralValueInUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
         return ((collateralAdjustedForThreshold * PRECISION) / totalDscMinted);
     }
@@ -374,5 +379,9 @@ contract DSCEngine is ReentrancyGuard {
 
     function getPriceFeed(address token) external view returns(address) {
         return s_priceFeeds[token];
+    }
+
+    function getHealthValue(address user) external view returns(uint256) {
+        return _healthFactor(user);
     }
 }

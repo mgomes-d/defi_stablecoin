@@ -20,9 +20,13 @@ contract DSCEngineIntegration is Test {
     address weth;
 
     address public USER = makeAddr("user");
+    address public USERLIQUIDATE = makeAddr("userliquidate");
     uint256 public constant STARTING_ERC20_BALANCE = 10 ether;
     uint256 public constant AMOUNT_COLLATERAL = 10 ether;
     uint256 public constant AMOUNT_MINTED = 10e8;
+    uint256 public constant AMOUNT_COLLATERAL_LIQUIDATE = 1 ether;
+    uint256 public constant AMOUNT_MINTED_LIQUIDATE = 0.5 ether;
+
 
     function setUp() public {
         deployer = new DeployDSC();
@@ -30,6 +34,7 @@ contract DSCEngineIntegration is Test {
         (ethUsdPriceFeed, btcUsdPriceFeed, weth, wbtc,) = config.activeNetworkConfig();
 
         ERC20Mock(weth).mint(USER, STARTING_ERC20_BALANCE);
+        ERC20Mock(weth).mint(USERLIQUIDATE, STARTING_ERC20_BALANCE);
     }
     ///////////////
     //  Modifier //
@@ -90,8 +95,43 @@ contract DSCEngineIntegration is Test {
         vm.stopPrank();
     }
 
-    function testRedeemCollateralForDsc public depositedCollateral mintedDsc{
+    function testBurnDsc() public depositedCollateral mintedDsc{
         vm.startPrank(USER);
-        
+        DecentralizedStableCoin(dsc).approve(address(dsce), AMOUNT_MINTED);
+        dsce.burnDsc(AMOUNT_MINTED);
+        (uint256 dscMinted,) = dsce.getAccountInformation(USER);
+        assertEq(dscMinted, 0);
+        vm.stopPrank();
     }
+
+    function testRedeemCollateral() public depositedCollateral {
+        vm.startPrank(USER);
+        DecentralizedStableCoin(dsc).approve(address(dsce), AMOUNT_COLLATERAL);
+        dsce.redeemCollateral(weth, AMOUNT_COLLATERAL);
+        (,uint256 collateralValue) = dsce.getAccountInformation(USER);
+        assertEq(collateralValue, 0);
+        vm.stopPrank();
+    }
+
+    function testRedeemCollateralForDsc() public depositedCollateral mintedDsc{
+        vm.startPrank(USER);
+        DecentralizedStableCoin(dsc).approve(address(dsce), AMOUNT_COLLATERAL);
+        dsce.redeemCollateralForDsc(weth, AMOUNT_COLLATERAL, AMOUNT_MINTED);
+        (uint256 dscMinted, uint256 collateralValueInUsd) = dsce.getAccountInformation(USER);
+        assertEq(dscMinted, 0);
+        assertEq(collateralValueInUsd, 0);
+        vm.stopPrank();
+    }
+
+    function testLiquidate() public depositedCollateral mintedDsc{
+        vm.startPrank(USERLIQUIDATE);
+        ERC20Mock(weth).approve(address(dsce), AMOUNT_COLLATERAL_LIQUIDATE);
+        dsce.depositCollateral(weth, AMOUNT_COLLATERAL_LIQUIDATE);
+        dsce.mintDsc(AMOUNT_MINTED_LIQUIDATE);
+        DecentralizedStableCoin(dsc).approve(address(dsce), AMOUNT_COLLATERAL_LIQUIDATE);
+        dsce.redeemCollateral(weth, AMOUNT_COLLATERAL_LIQUIDATE - 100000);
+        console.log(dsce.getHealthValue(USERLIQUIDATE));
+        vm.stopPrank();
+    }
+
 }
