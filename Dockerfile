@@ -5,10 +5,7 @@ RUN apt-get update && \
     apt-get install -y curl && \
     apt-get install -y git-all && \
     apt-get install -y make && \
-    curl -L "https://foundry.paradigm.xyz" | bash && \
-    foundry up
-
-COPY ~/.gitconfig /
+    curl -L "https://foundry.paradigm.xyz" | bash
 
 WORKDIR /app
 
