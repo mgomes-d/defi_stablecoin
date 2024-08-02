@@ -8,6 +8,7 @@ import {DSCEngine} from "src/DSCEngine.sol";
 import {HelperConfig} from "script/HelperConfig.s.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/ERC20Mock.sol";
 import {console} from "forge-std/console.sol";
+import {MockV3Aggregator} from "test/mocks/MockV3Aggregator.sol";
 
 contract DSCEngineIntegration is Test {
     DeployDSC deployer;
@@ -18,20 +19,23 @@ contract DSCEngineIntegration is Test {
     address btcUsdPriceFeed;
     address wbtc;
     address weth;
+    ERC20Mock collateralToken;
+    MockPriceFeed mockPriceFeed;
 
     address public USER = makeAddr("user");
     address public USERLIQUIDATE = makeAddr("userliquidate");
     uint256 public constant STARTING_ERC20_BALANCE = 10 ether;
     uint256 public constant AMOUNT_COLLATERAL = 10 ether;
     uint256 public constant AMOUNT_MINTED = 10e8;
-    uint256 public constant AMOUNT_COLLATERAL_LIQUIDATE = 1 ether;
-    uint256 public constant AMOUNT_MINTED_LIQUIDATE = 0.5 ether;
+    uint256 public constant AMOUNT_COLLATERAL_LIQUIDATE = 0.001 * 10e5;
+    uint256 public constant AMOUNT_MINTED_LIQUIDATE = 1 * 10e5;
 
 
     function setUp() public {
         deployer = new DeployDSC();
         (dsc, dsce, config) = deployer.run();
         (ethUsdPriceFeed, btcUsdPriceFeed, weth, wbtc,) = config.activeNetworkConfig();
+
 
         ERC20Mock(weth).mint(USER, STARTING_ERC20_BALANCE);
         ERC20Mock(weth).mint(USERLIQUIDATE, STARTING_ERC20_BALANCE);
@@ -128,9 +132,12 @@ contract DSCEngineIntegration is Test {
         ERC20Mock(weth).approve(address(dsce), AMOUNT_COLLATERAL_LIQUIDATE);
         dsce.depositCollateral(weth, AMOUNT_COLLATERAL_LIQUIDATE);
         dsce.mintDsc(AMOUNT_MINTED_LIQUIDATE);
-        DecentralizedStableCoin(dsc).approve(address(dsce), AMOUNT_COLLATERAL_LIQUIDATE);
-        dsce.redeemCollateral(weth, AMOUNT_COLLATERAL_LIQUIDATE - 100000);
+        vm.stopPrank();
+        MockV3Aggregator(ethUsdPriceFeed).updateAnswer(1000e8);
+        vm.startPrank(USER);
         console.log(dsce.getHealthValue(USERLIQUIDATE));
+        DecentralizedStableCoin(dsc).approve(address(dsce), AMOUNT_MINTED);
+        dsce.liquidate(weth, USERLIQUIDATE, 900000);
         vm.stopPrank();
     }
 
