@@ -272,6 +272,7 @@ contract DSCEngine is ReentrancyGuard {
 
     function getHealthFactor() external view {}
 
+
     //////////////////////////////////////////
     // Private && Internal View Functions   //
     //////////////////////////////////////////
@@ -342,6 +343,12 @@ contract DSCEngine is ReentrancyGuard {
     //////////////////////////////////////////
     // Public && external View Functions    //
     //////////////////////////////////////////
+
+    function getHealthFactorWithValue(uint256 value) external {
+        
+    }
+
+
 
     function getTokenAmountFromUsd(address token, uint256 usdAmountInWei)
     public view returns(uint256) {

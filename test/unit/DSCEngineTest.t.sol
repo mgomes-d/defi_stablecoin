@@ -19,8 +19,11 @@ contract DSCEngineTest is Test {
     address weth;
 
     address public USER = makeAddr("user");
+    address public USERLIQUIDATE = makeAddr("user2");
     uint256 public constant AMOUNT_COLLATERAL = 10 ether;
     uint256 public constant STARTING_ERC20_BALANCE = 10 ether;
+    uint256 public constant MINT_DSC = 10 ether;
+    uint256 public constant TOO_MUCH_MINT = 1e5 ether;
 
     function setUp() public {
         deployer = new DeployDSC();
@@ -28,6 +31,7 @@ contract DSCEngineTest is Test {
         (ethUsdPriceFeed, btcUsdPriceFeed, weth, ,) = config.activeNetworkConfig();
 
         ERC20Mock(weth).mint(USER, STARTING_ERC20_BALANCE);
+        ERC20Mock(weth).mint(USERLIQUIDATE, STARTING_ERC20_BALANCE);
     }
     ///////////////////////
     // Constructor Tests //
@@ -103,5 +107,61 @@ contract DSCEngineTest is Test {
         assertEq(AMOUNT_COLLATERAL, expectedDepositAmount);
     }
 
-    //
+    /////////////////
+    // burn  Tests //
+    /////////////////
+    function testBurnTooMuchDSC() public depositedCollateral {
+        vm.startPrank(USER);
+        dsce.mintDsc(MINT_DSC);
+        vm.expectRevert();
+        dsce.burnDsc(MINT_DSC + 1);
+        vm.stopPrank();
+    }
+
+    //////////////////////
+    // Liquidate  Tests //
+    //////////////////////
+
+    function testLiquidateHealthyUser() public depositedCollateral{
+        vm.startPrank(USERLIQUIDATE);
+        ERC20Mock(weth).approve(address(dsce), AMOUNT_COLLATERAL);
+        dsce.depositCollateral(weth, AMOUNT_COLLATERAL);
+        dsce.mintDsc(MINT_DSC);
+        vm.stopPrank();
+        vm.startPrank(USER);
+        dsce.mintDsc(MINT_DSC);
+        DecentralizedStableCoin(dsc).approve(address(dsce), MINT_DSC);
+        vm.expectRevert(DSCEngine.DSCEngine__HealthFactorOk.selector);
+        dsce.liquidate(weth, USERLIQUIDATE, MINT_DSC);
+        vm.stopPrank();
+    }
+
+    /////////////////
+    /// mint test  //
+    /////////////////
+
+    function testMintTooMuch() public depositedCollateral {
+        vm.startPrank(USER);
+        vm.expectRevert();
+        dsce.mintDsc(TOO_MUCH_MINT);
+        vm.stopPrank();
+    }
+
+    function testMintZero() public depositedCollateral {
+        vm.startPrank(USER);
+        vm.expectRevert(DSCEngine.DSCEngine__NeedsMoreThanZero.selector);
+        dsce.mintDsc(0);
+        vm.stopPrank();
+    }
+
+    function testDepositCollateralAndMintTooMuch() public {
+        vm.startPrank(USER);
+        ERC20Mock(weth).approve(address(dsce), AMOUNT_COLLATERAL);
+        vm.expectRevert();
+        dsce.depositCollateralAndMintDsc(weth, AMOUNT_COLLATERAL, TOO_MUCH_MINT);
+        vm.stopPrank();
+    }
+
+
+
 }

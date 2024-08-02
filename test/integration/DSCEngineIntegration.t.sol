@@ -19,8 +19,6 @@ contract DSCEngineIntegration is Test {
     address btcUsdPriceFeed;
     address wbtc;
     address weth;
-    ERC20Mock collateralToken;
-    MockPriceFeed mockPriceFeed;
 
     address public USER = makeAddr("user");
     address public USERLIQUIDATE = makeAddr("userliquidate");
