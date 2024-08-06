@@ -1,68 +1,123 @@
-## Foundry
+# Foundy DeFi Stablecoin
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+This is a section of the Cyfrin foundry Solidity Course.
 
-Foundry consists of:
+# About
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+This project is meant to be a stablecoin where users can deposit WETH abd WBTC in exchange for a token that will be pegged to the USD.
 
-## Documentation
+# Getting Started
 
-https://book.getfoundry.sh/
+## Requirements
+- [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+- [foundry](https://getfoundry.sh/)
 
-## Usage
+## Quickstart
 
-### Build
-
-```shell
-$ forge build
+```
+git clone https://github.com/mgomes-d/defi_stablecoin
+cd defi_stablecoin
+make install
+forge build
 ```
 
-### Test
+# Usage
 
-```shell
-$ forge test
+## Start a local
+
+```
+anvil
 ```
 
-### Format
+## Deploy
 
-```shell
-$ forge fmt
+This will default to your local node. You need to have it runing in another terminal in order for it to deploy.
+```
+make deploy
 ```
 
-### Gas Snapshots
+## Testing 
 
-```shell
-$ forge snapshot
+In this repo there 3 types of test.
+
+Unit, Integration and fuzzing.
+
+```
+forge test
 ```
 
-### Anvil
+### Test Coverage
 
-```shell
-$ anvil
+```
+forge coverage
+```
+and for coverage based testing:
+```
+forge coverage --report debug
 ```
 
-### Deploy
+# Deployment to a testnet or mainnet
 
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+- `PRIVATE_KEY`: The private key of your account (like from [metamask](https://metamask.io/)). **NOTE:** FOR DEVELOPMENT, PLEASE USE A KEY THAT DOESN'T HAVE ANY REAL FUNDS ASSOCIATED WITH IT.
+
+1. Get testnet ETH
+
+Go to this site [faucets.chain.link](https://faucets.chain.link/) to get testnet ETH.
+
+2. Deploy
+
+```
+forge script script/DeployDSC.s.sol:DeployDSC --rpc-url <SEPOLIA_RPC_URL> --private-key <PRIVATE KEY> --broadcast
+```
+If you're using a mainnet use a keystore
+- How to use:
+  - To create a new account, open a new terminal, not in vscode (for security reason).
+    ```
+    cast wallet import accountName --interactive
+    ```
+    Past yout private-key and enter a password.
+    By default, the account will be stored at ~/.foundry/keystores
+  
+  - To check all yours accounts:
+    ```
+    cast wallet list
+    ```
+
+    For more informations about the [wallet commands](https://book.getfoundry.sh/reference/cast/wallet-commands).
+
+Now you can use this command to deploy more safely
+```
+forge script script/DeployDSC.s.sol:DeployDSC --rpc-url <SEPOLIA_RPC_URL> --account <accountName> --broadcast
 ```
 
-### Cast
+## Scripts 
 
-```shell
-$ cast <subcommand>
+Instead of scripts, we can directly use the `cast` command to interact with the contract.
+
+For example, on Sepolia:
+
+1. Get WETH
+
+```
+cast send 0xdd13E55209Fd76AfE204dBda4007C227904f0a81 "deposit()" --value 0.1ether --rpc-url<SEPOLIA_RPC_URL> --account <SEPOLIA_ACCOUNT>
 ```
 
-### Help
+2. Approve the WETH
 
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+```
+cast send 0xdd13E55209Fd76AfE204dBda4007C227904f0a81 "approve(address,uint256)" <Your contract address> 1000000000000000000 --rpc-url <$SEPOLIA_RPC_URL> --account <SEPOLIA_ACCOUNT>
 ```
 
-# forge inspect <contract name> methods
+3. Deposit and Mint DSC
+
+```
+cast send <CONTRACT ADDRESS> "depositCollateralAndMintDsc(address,uint256,uint256)" 0xdd13E55209Fd76AfE204dBda4007C227904f0a81 100000000000000000 10000000000000000 --rpc-url <SEPOLIA_RPC_URL> --account <SEPOLIA_ACCOUNT>
+```
+
+## Estimate gas
+
+You can estimate how much gas things cost by running:
+```
+forge snapshot
+```
+and there a output file called `.gas-snapshot` 
